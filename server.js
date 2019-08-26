@@ -3,8 +3,10 @@ var express = require("express");
 var bodyParser = require("body-parser");
 var logger = require("morgan");
 var cors = require("cors");
+var fileUpload = require('express-fileupload');
 
 var Project = require("./project-model");
+var Type = require("./type-model");
 
 //setup database connection
 var connectionString =
@@ -19,7 +21,9 @@ var app = express();
 app.use(cors());
 app.use(bodyParser.json()); // for parsing application/json
 app.use(bodyParser.urlencoded({ extended: true })); // for parsing application/x-www-form-urlencoded
+app.use(fileUpload());
 app.use(logger("dev"));
+app.use(express.static('public'));
 
 //setup routes
 var router = express.Router();
@@ -53,6 +57,19 @@ router.post("/projects", (req, res) => {
   });
 });
 
+router.post("/upload", (req, res) => {
+  var files = Object.values(req.files);
+  var uploadedFile = files[0]; //assuming they are uploading one file
+  // console.log(uploadedFile);
+              // .mv('name of file', callback function)
+
+  var newName = Date.now() + uploadedFile.name;
+  uploadedFile.mv('public/'+ newName, () =>{
+    res.send(newName);
+  });
+
+});
+
 router.delete("/projects/:id", (req, res) => {
   Project.deleteOne({ id: req.params.id }).then(() => {
     return res.json("deleted");
@@ -70,6 +87,14 @@ router.put("/projects/:id", (req, res) => {
       return res.json(project);
     });
 });
+
+router.get("/types", (req, res) => {
+  Type.find().then((types)=>{
+    return res.json(types);
+  });
+});
+
+
 
 app.use("/api", router); // you can change prefix from api to something else
 
